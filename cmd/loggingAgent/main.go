@@ -9,9 +9,9 @@ import (
 
 	"code.cloudfoundry.org/cflager"
 
+	"github.com/cf-furnace/loggingAgent/proxy"
+	"github.com/cf-furnace/loggingAgent/watcher"
 	"github.com/cloudfoundry/dropsonde"
-	"github.com/fraenkel/loggingAgent/proxy"
-	"github.com/fraenkel/loggingAgent/watcher"
 )
 
 const (

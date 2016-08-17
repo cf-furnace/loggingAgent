@@ -8,9 +8,9 @@ import (
 
 	"code.cloudfoundry.org/lager"
 
+	"github.com/cf-furnace/loggingAgent/retriever"
 	"github.com/cloudfoundry-incubator/nsync/helpers"
 	"github.com/cloudfoundry/dropsonde"
-	"github.com/fraenkel/loggingAgent/retriever"
 	uuid "github.com/nu7hatch/gouuid"
 )
 

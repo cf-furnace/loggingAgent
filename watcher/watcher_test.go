@@ -7,7 +7,7 @@ import (
 
 	"code.cloudfoundry.org/lager/lagertest"
 
-	"github.com/fraenkel/loggingAgent/watcher"
+	"github.com/cf-furnace/loggingAgent/watcher"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

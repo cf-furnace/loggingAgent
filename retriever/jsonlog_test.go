@@ -4,8 +4,8 @@ import (
 	"io/ioutil"
 	"os"
 
+	. "github.com/cf-furnace/loggingAgent/retriever"
 	"github.com/cloudfoundry/sonde-go/events"
-	. "github.com/fraenkel/loggingAgent/retriever"
 	"github.com/gogo/protobuf/proto"
 
 	. "github.com/onsi/ginkgo"

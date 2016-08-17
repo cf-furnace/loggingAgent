@@ -5,10 +5,10 @@ import (
 	"os"
 
 	"code.cloudfoundry.org/lager/lagertest"
+	. "github.com/cf-furnace/loggingAgent/proxy"
 	"github.com/cloudfoundry-incubator/nsync/helpers"
 	"github.com/cloudfoundry/dropsonde/emitter/fake"
 	"github.com/cloudfoundry/sonde-go/events"
-	. "github.com/fraenkel/loggingAgent/proxy"
 	"github.com/gogo/protobuf/proto"
 	uuid "github.com/nu7hatch/gouuid"
 
