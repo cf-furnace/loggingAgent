@@ -18,7 +18,6 @@ const (
 )
 
 var (
-	sourceType     = "APP"
 	sourceInstance = "??"
 )
 
@@ -49,6 +48,7 @@ type LogReader struct {
 	Msg chan *events.LogMessage
 	Err chan error
 
+	source   string
 	appID    string
 	filename string
 	file     *os.File
@@ -58,7 +58,7 @@ type LogReader struct {
 	buf     *bytes.Buffer
 }
 
-func New(appID, filename string, tail bool) (*LogReader, error) {
+func New(source, appID, filename string, tail bool) (*LogReader, error) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, err
@@ -69,6 +69,7 @@ func New(appID, filename string, tail bool) (*LogReader, error) {
 		Msg: make(chan *events.LogMessage, 4096),
 		Err: make(chan error, 1),
 
+		source:   source,
 		appID:    appID,
 		filename: filename,
 		tail:     tail,
@@ -214,7 +215,7 @@ func (r *LogReader) parse() error {
 			Message:        []byte(log.Log),
 			AppId:          proto.String(r.appID),
 			MessageType:    &msgType,
-			SourceType:     &sourceType,
+			SourceType:     &r.source,
 			SourceInstance: &sourceInstance,
 			Timestamp:      proto.Int64(log.Created.UnixNano()),
 		}

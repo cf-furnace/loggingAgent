@@ -32,10 +32,13 @@ var _ = Describe("Proxy", func() {
 
 	Describe("Add", func() {
 		var (
-			appGuid *uuid.UUID
-			podName string
-			logPath string
-			tail    bool
+			appGuid   *uuid.UUID
+			podName   string
+			container string
+			logPath   string
+			tail      bool
+
+			addError error
 		)
 
 		BeforeEach(func() {
@@ -47,12 +50,23 @@ var _ = Describe("Proxy", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			podName = pg.ShortenedGuid() + "-rand"
+			container = "application-XXX"
 			logPath = "path"
 			tail = false
 		})
 
 		JustBeforeEach(func() {
-			proxy.Add(podName, logPath, tail)
+			addError = proxy.Add(podName, container, logPath, tail)
+		})
+
+		Context("with an unsupported container name", func() {
+			BeforeEach(func() {
+				container = "invalid"
+			})
+
+			It("fails with an error", func() {
+				Expect(addError).To(MatchError("unsupported-container-name"))
+			})
 		})
 
 		Context("with an invalid pod name", func() {
@@ -61,6 +75,7 @@ var _ = Describe("Proxy", func() {
 			})
 
 			It("fails with an error", func() {
+				Expect(addError).To(MatchError("invalid-pod-name"))
 				Expect(logger.LogMessages()).To(ConsistOf(".proxy.pod-name-failure"))
 			})
 		})
@@ -71,6 +86,7 @@ var _ = Describe("Proxy", func() {
 			})
 
 			It("fails with an error", func() {
+				Expect(addError).To(MatchError("invalid-inode"))
 				Expect(logger.LogMessages()).To(ConsistOf(".proxy.invalid-inode"))
 			})
 		})
@@ -96,7 +112,7 @@ var _ = Describe("Proxy", func() {
 				logFile.Close()
 			})
 
-			It("emits log messages", func() {
+			It("emits APP log messages", func() {
 				outType := events.LogMessage_OUT
 				errType := events.LogMessage_ERR
 				appId := appGuid.String()
@@ -117,6 +133,35 @@ var _ = Describe("Proxy", func() {
 						SourceType:     proto.String("APP"),
 						SourceInstance: proto.String("??"),
 					}))
+			})
+
+			Context("with a staging container", func() {
+				BeforeEach(func() {
+					container = "cf-stage-bogus"
+				})
+
+				It("emits APP log messages", func() {
+					outType := events.LogMessage_OUT
+					errType := events.LogMessage_ERR
+					appId := appGuid.String()
+					Eventually(emitter.GetEvents).Should(ConsistOf(
+						&events.LogMessage{
+							Message:        []byte("a stdout message"),
+							MessageType:    &outType,
+							Timestamp:      proto.Int64(1257894000000000000),
+							AppId:          proto.String(appId),
+							SourceType:     proto.String("STG"),
+							SourceInstance: proto.String("??"),
+						},
+						&events.LogMessage{
+							Message:        []byte("a stderr message"),
+							MessageType:    &errType,
+							Timestamp:      proto.Int64(1257894000000000000),
+							AppId:          proto.String(appId),
+							SourceType:     proto.String("STG"),
+							SourceInstance: proto.String("??"),
+						}))
+				})
 			})
 
 			Context("when the log is deleted", func() {

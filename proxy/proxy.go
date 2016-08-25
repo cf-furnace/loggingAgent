@@ -30,31 +30,40 @@ func New(logger lager.Logger, eventEmitter dropsonde.EventEmitter) *Proxy {
 	}
 }
 
-func (p *Proxy) Add(pod string, path string, tail bool) {
+func (p *Proxy) Add(pod, container, path string, tail bool) error {
+	var source string
+	if strings.HasPrefix(container, "application-") {
+		source = "APP"
+	} else if strings.HasPrefix(container, "cf-stage-") {
+		source = "STG"
+	} else {
+		return errors.New("unsupported-container-name")
+	}
+
 	logger := p.logger.WithData(lager.Data{"pod": pod, "path": path})
 	randomBits := strings.LastIndexByte(pod, '-')
 	if randomBits == -1 {
 		logger.Error("pod-name-failure", nil)
-		return
+		return errors.New("invalid-pod-name")
 	}
 
 	pguid, err := decodeProcessGuid(pod[:randomBits])
 	if err != nil {
 		logger.Error("process-guid-failure", err, lager.Data{"shortened-guid": pod[:randomBits]})
-		return
+		return errors.New("invalid-process-guid")
 	}
 
 	appID := pguid.AppGuid.String()
-	r, err := retriever.New(appID, path, tail)
+	r, err := retriever.New(source, appID, path, tail)
 	if err != nil {
 		logger.Error("new-retriever", err)
-		return
+		return err
 	}
 
 	ino := r.ID()
 	if ino == 0 {
 		logger.Error("invalid-inode", err)
-		return
+		return errors.New("invalid-inode")
 	}
 
 	p.mu.Lock()
@@ -72,6 +81,8 @@ func (p *Proxy) Add(pod string, path string, tail bool) {
 		delete(p.inodesToApp, ino)
 		p.mu.Unlock()
 	}()
+
+	return nil
 }
 
 func (p *Proxy) copyEvents(logger lager.Logger, appID string, logReader *retriever.LogReader) {

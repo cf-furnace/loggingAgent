@@ -13,6 +13,7 @@ import (
 )
 
 var _ = Describe("JsonLogFile", func() {
+	var source string
 	var appID string
 	var jsonLog *os.File
 	var tail bool
@@ -20,6 +21,7 @@ var _ = Describe("JsonLogFile", func() {
 	var reader *LogReader
 
 	BeforeEach(func() {
+		source = "src"
 		appID = "appID"
 		tail = false
 
@@ -30,7 +32,7 @@ var _ = Describe("JsonLogFile", func() {
 
 	JustBeforeEach(func() {
 		var err error
-		reader, err = New(appID, jsonLog.Name(), tail)
+		reader, err = New(source, appID, jsonLog.Name(), tail)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -75,7 +77,7 @@ var _ = Describe("JsonLogFile", func() {
 				MessageType:    &msgType,
 				Timestamp:      proto.Int64(1257894000000000000),
 				AppId:          proto.String("appID"),
-				SourceType:     proto.String("APP"),
+				SourceType:     &source,
 				SourceInstance: proto.String("??"),
 			}))
 			Eventually(reader.Msg).Should(Receive(&e))
@@ -85,7 +87,7 @@ var _ = Describe("JsonLogFile", func() {
 				MessageType:    &msgType,
 				Timestamp:      proto.Int64(1257894000000000000),
 				AppId:          proto.String("appID"),
-				SourceType:     proto.String("APP"),
+				SourceType:     &source,
 				SourceInstance: proto.String("??"),
 			}))
 		})
