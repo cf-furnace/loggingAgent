@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"syscall"
 
 	"code.cloudfoundry.org/cflager"
@@ -57,7 +58,9 @@ DONE:
 	for {
 		select {
 		case event := <-watchEvents:
-			logProxy.Add(event.Pod, event.Path, event.Info != nil)
+			if strings.HasPrefix(event.Container, "application-") {
+				logProxy.Add(event.Pod, event.Path, event.Info != nil)
+			}
 		case <-osSignals:
 			signal.Stop(osSignals)
 			break DONE
