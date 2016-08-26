@@ -1,7 +1,6 @@
 package proxy
 
 import (
-	"encoding/base32"
 	"errors"
 	"strings"
 	"sync"
@@ -9,9 +8,8 @@ import (
 	"code.cloudfoundry.org/lager"
 
 	"github.com/cf-furnace/loggingAgent/retriever"
-	"github.com/cloudfoundry-incubator/nsync/helpers"
+	"github.com/cf-furnace/pkg/cloudfoundry"
 	"github.com/cloudfoundry/dropsonde"
-	uuid "github.com/nu7hatch/gouuid"
 )
 
 type Proxy struct {
@@ -34,7 +32,7 @@ func (p *Proxy) Add(pod, container, path string, tail bool) error {
 	var source string
 	if strings.HasPrefix(container, "application-") {
 		source = "APP"
-	} else if strings.HasPrefix(container, "cf-stage-") {
+	} else if strings.HasPrefix(container, "staging-") {
 		source = "STG"
 	} else {
 		return errors.New("unsupported-container-name")
@@ -47,7 +45,7 @@ func (p *Proxy) Add(pod, container, path string, tail bool) error {
 		return errors.New("invalid-pod-name")
 	}
 
-	pguid, err := decodeProcessGuid(pod[:randomBits])
+	pguid, err := cloudfoundry.DecodeProcessGuid(pod[:randomBits])
 	if err != nil {
 		logger.Error("process-guid-failure", err, lager.Data{"shortened-guid": pod[:randomBits]})
 		return errors.New("invalid-process-guid")
@@ -104,41 +102,4 @@ func (p *Proxy) copyEvents(logger lager.Logger, appID string, logReader *retriev
 			return
 		}
 	}
-}
-
-func decodeProcessGuid(shortenedGuid string) (helpers.ProcessGuid, error) {
-	splited := strings.Split(strings.ToUpper(shortenedGuid), "-")
-	if len(splited) != 2 {
-		return helpers.ProcessGuid{}, errors.New("invalid shortened process guid")
-	}
-	// add padding
-	appGuid := addPadding(splited[0])
-	appVersion := addPadding(splited[1])
-
-	// decode it
-	longAppGuid, err := base32.StdEncoding.DecodeString(appGuid[:])
-	if err != nil {
-		return helpers.ProcessGuid{}, errors.New("Unable to decode appGuid - invalid shortened process guid")
-	}
-	longAppVersion, err := base32.StdEncoding.DecodeString(appVersion[:])
-	if err != nil {
-		return helpers.ProcessGuid{}, errors.New("Unable to decode appVersion - invalid shortened process guid")
-	}
-
-	appGuidUUID, err := uuid.Parse(longAppGuid)
-	appVersionUUID, err := uuid.Parse(longAppVersion)
-
-	if err != nil {
-		return helpers.ProcessGuid{}, errors.New("Unable to parse appGuid - invalid shortened process guid")
-	}
-
-	if err != nil {
-		return helpers.ProcessGuid{}, errors.New("Unable to parse appVersion - invalid shortened process guid")
-	}
-
-	return helpers.NewProcessGuid(appGuidUUID.String() + "-" + appVersionUUID.String())
-}
-
-func addPadding(s string) string {
-	return s + strings.Repeat("=", 8-len(s)%8)
 }

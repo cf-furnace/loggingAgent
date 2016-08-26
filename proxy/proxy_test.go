@@ -137,7 +137,7 @@ var _ = Describe("Proxy", func() {
 
 			Context("with a staging container", func() {
 				BeforeEach(func() {
-					container = "cf-stage-bogus"
+					container = "staging-bogus"
 				})
 
 				It("emits APP log messages", func() {
